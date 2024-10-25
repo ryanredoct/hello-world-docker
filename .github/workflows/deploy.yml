@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Debugging CI/CD Pipeline
 
 on:
   push:
@@ -10,30 +10,68 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Log in to AWS ECR
+      # Step 1: Check AWS Secrets Setup
+      - name: Check AWS Credentials Availability
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "ERROR: AWS_ACCESS_KEY_ID is not available!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_SECRET_ACCESS_KEY }}" ]; then
+            echo "ERROR: AWS_SECRET_ACCESS_KEY is not available!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.AWS_REGION }}" ]; then
+            echo "ERROR: AWS_REGION is not available!"
+            exit 1
+          fi
+          echo "AWS credentials and region are available."
+          
+      # Step 2: Configure AWS Credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      # Step 3: Check AWS CLI Version and Configuration
+      - name: Check AWS CLI Configuration
+        run: |
+          aws --version
+          aws sts get-caller-identity
+          echo "AWS CLI is properly configured."
+
+      # Step 4: Attempt to Log into AWS ECR and provide detailed error logging
       - name: Login to AWS ECR
         run: |
           aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 767397889236.dkr.ecr.eu-central-1.amazonaws.com
+        continue-on-error: true # Don't fail immediately, log the error instead
 
-      # Build the Docker image and push to ECR
+      # Step 5: Log Last Docker Command's Error if Login Fails
+      - name: Check Docker ECR Login Success
+        if: failure()
+        run: |
+          echo "ERROR: Docker login failed. Check the above logs for more details."
+          docker info
+
+      # Step 6: Build and Push Docker Image (this will only run if login succeeds)
       - name: Build and push Docker image
         run: |
           docker build -t hello-world-docker .
           docker tag hello-world-docker:latest 767397889236.dkr.ecr.eu-central-1.amazonaws.com/hello-world-docker:latest
           docker push 767397889236.dkr.ecr.eu-central-1.amazonaws.com/hello-world-docker:latest
+        if: success()
 
-      # Git configuration and push the code
-      - name: Git push changes
+      # Step 7: Log Any Build or Push Errors (if any)
+      - name: Check Docker Build and Push Success
+        if: failure()
         run: |
-          git config --global user.email "ryan.1917@gmail.com"
-          git config --global user.name "ryanredoct"
-          git add .
-          git commit -m "Auto-commit via GitHub Action"
-          git push https://ryanredoct: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@github.com/ryanredoct/hello-world-docker.git
+          echo "ERROR: Docker build or push failed. Check the above logs for more details."
+
 
 
 
