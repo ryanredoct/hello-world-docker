@@ -26,6 +26,18 @@ jobs:
           docker tag hello-world-docker:latest 767397889236.dkr.ecr.eu-central-1.amazonaws.com/hello-world-docker:latest
           docker push 767397889236.dkr.ecr.eu-central-1.amazonaws.com/hello-world-docker:latest
 
+      - name: Configure Git for pushing
+        run: |
+          git config --global user.email "your-email@example.com"
+          git config --global user.name "your-github-username"
+
+      - name: Commit and Push Changes
+        run: |
+          git add .
+          git commit -m "Auto-commit by GitHub Action"
+          git push https://your-github-username:your-github-token@github.com/your-github-username/your-repository-name.git
+
+
 
 
 
