@@ -18,13 +18,14 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
-          echo "${{ secrets.AWS_ACCESS_KEY_ID }}" | docker login -u AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 767397889236.dkr.ecr.eu-central-1.amazonaws.com
 
       - name: Build and push Docker image
         run: |
           docker build -t hello-world-docker .
-          docker tag hello-world-docker:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-docker:latest
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/hello-world-docker:latest
+          docker tag hello-world-docker:latest 767397889236.dkr.ecr.eu-central-1.amazonaws.com/hello-world-docker:latest
+          docker push 767397889236.dkr.ecr.eu-central-1.amazonaws.com/hello-world-docker:latest
+
 
 
 
